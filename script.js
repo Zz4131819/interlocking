@@ -1,17 +1,30 @@
-// Canvas & Context
+/*
+ * 画布与上下文
+ * canvas: 主设计画布元素
+ * ctx: 画布的2D渲染上下文
+ * canvasContainer: 包含画布的容器元素
+ * areaDimensionsContainer: 显示区域尺寸的元素
+ */
 const canvas = document.getElementById("designCanvas");
 const ctx = canvas.getContext("2d");
 const canvasContainer = document.getElementById("canvasContainer");
 const areaDimensionsContainer = document.getElementById("areaDimensions");
 
-// Controls
+// 控制元素
+// dimensionsDisplay: 显示当前尺寸信息的元素
 const dimensionsDisplay = document.getElementById("dimensions");
 
-// Sidebar Items
+// 侧边栏项目
+// sidebarItems: 所有侧边栏项目元素的集合
 const sidebarItems = document.querySelectorAll(".sidebar-item");
 
-// Settings
-// Settings
+/*
+ * 全局设置
+ * pixelsPerFoot: 每英尺对应的像素数(25像素/英尺)
+ * tileWidthInches: 瓷砖物理宽度(15.75英寸)
+ * tileWidthFt: 瓷砖宽度转换为英尺(1.3125英尺)
+ * cellSize: 每个瓷砖单元的大小(32.8125像素)
+ */
 const pixelsPerFoot = 25; // 从35减少到25以获得更小的视觉尺寸
 const tileWidthInches = 15.75; // 物理瓷砖宽度
 const tileWidthFt = tileWidthInches / 12; // 转换为英尺: 1.3125 英尺
@@ -22,7 +35,19 @@ const fillOpacity = 0.8;
 const tileOpacity = 0.4;
 const patternOpacity = 0.4;
 
-// State Variables
+/*
+ * 状态变量
+ * isDragging: 标记是否正在拖动
+ * dragStartX/dragStartY: 拖动起始坐标
+ * paintColor: 当前绘制颜色(默认红色)
+ * currentStep: 当前设计步骤索引
+ * steps: 设计步骤数组
+ * activeSidebarSection: 当前激活的侧边栏部分
+ * activeHandle: 当前激活的调整手柄
+ * startMouseX/startMouseY: 鼠标起始位置
+ * startShape: 形状调整前的状态
+ * activeArea: 当前激活的设计区域
+ */
 let isDragging = false;
 let dragStartX, dragStartY;
 let paintColor = "#ff0000";
@@ -34,7 +59,17 @@ let startMouseX, startMouseY;
 let startShape = {};
 let activeArea = null;
 
-// Design Shape Object
+/*
+ * 设计形状对象
+ * type: 形状类型(rectangle/l-shape/u-shape等)
+ * vertices: 顶点坐标数组
+ * areas: 区域定义数组
+ * patternImage: 当前使用的图案图像
+ * tileType: 瓷砖类型
+ * baseColor: 基础颜色
+ * borderColor: 边框颜色
+ * currentTileId: 当前选中的瓷砖ID
+ */
 const designShape = {
   type: "rectangle",
   vertices: [],
@@ -51,7 +86,13 @@ const paintedCells = [];
 
 const tileImages = {};
 
-// Data Arrays
+/*
+ * 布局数据数组
+ * 包含所有可用的布局类型及其对应的SVG图像路径
+ * 每个布局对象包含:
+ *   id: 布局唯一标识符
+ *   image: 布局预览图像路径
+ */
 const layouts = [
   { id: "rectangle", image: "./media/svg/layouts/layout1.svg" },
   { id: "l-shape", image: "./media/svg/layouts/layout2.svg" },
@@ -59,6 +100,14 @@ const layouts = [
   { id: "double-legged-rectangle", image: "./media/svg/layouts/layout4.svg" },
 ];
 
+/*
+ * 图案数据数组
+ * 包含所有可用的图案类型及其对应的SVG图像路径和名称
+ * 每个图案对象包含:
+ *   id: 图案唯一标识符
+ *   image: 图案预览图像路径
+ *   name: 图案显示名称
+ */
 const patterns = [
   { id: "1", image: "./media/svg/patterns/patterns1.svg", name: "Pattern 1" },
   {
@@ -107,7 +156,12 @@ const colors = [
   // { id: "purple", value: "#800080", name: "Purple" },
 ];
 
-// Utility: Convert Hex to RGBA
+/*
+ * 工具函数: 将十六进制颜色转换为RGBA格式
+ * @param {string} hex - 十六进制颜色值(如"#FF0000")
+ * @param {number} opacity - 透明度值(0-1)
+ * @return {string} - 返回RGBA颜色字符串
+ */
 function hexToRgba(hex, opacity) {
   hex = hex.replace("#", "");
   const r = parseInt(hex.substring(0, 2), 16);
@@ -116,7 +170,128 @@ function hexToRgba(hex, opacity) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-// Load Pattern Image
+/**
+ * 创建棋盘格图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @param {number} rows - 行数
+ * @param {number} cols - 列数
+ * @param {string} color1 - 第一种颜色
+ * @param {string} color2 - 第二种颜色
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
+function createCheckerboardPattern(ctx, rows, cols, color1, color2) {
+  const patternCanvas = document.createElement("canvas");
+  patternCanvas.width = cellSize * cols;
+  patternCanvas.height = cellSize * rows;
+  const pCtx = patternCanvas.getContext("2d");
+
+  pCtx.fillStyle = color1;
+  pCtx.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+  pCtx.fillStyle = color2;
+  
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      if ((i + j) % 2 === 0) {
+        pCtx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+  
+  return ctx.createPattern(patternCanvas, "repeat");
+}
+
+/**
+ * 创建边框图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @param {number} rows - 总行数
+ * @param {number} cols - 总列数
+ * @param {number[]} outerRows - 外圈行范围
+ * @param {number[]} outerCols - 外圈列范围
+ * @param {string} outerColor - 外圈颜色
+ * @param {number[]} innerRows - 内圈行范围
+ * @param {number[]} innerCols - 内圈列范围
+ * @param {string} innerColor - 内圈颜色
+ * @param {string} centerColor - 中心区域颜色
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
+function createBorderPattern(ctx, rows, cols, outerRows, outerCols, outerColor, innerRows, innerCols, innerColor, centerColor) {
+  const patternCanvas = document.createElement("canvas");
+  patternCanvas.width = cellSize * cols;
+  patternCanvas.height = cellSize * rows;
+  const pCtx = patternCanvas.getContext("2d");
+
+  for (let i = 1; i <= rows; i++) {
+    for (let j = 1; j <= cols; j++) {
+      let fillColor = centerColor;
+      
+      // 外圈判断
+      if (i <= outerRows[0] || i >= outerRows[1] || j <= outerCols[0] || j >= outerCols[1]) {
+        fillColor = outerColor;
+      } 
+      // 内圈判断
+      else if ((i <= innerRows[0] || i >= innerRows[1]) || (j <= innerCols[0] || j >= innerCols[1])) {
+        fillColor = innerColor;
+      }
+      
+      pCtx.fillStyle = fillColor;
+      pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
+    }
+  }
+  
+  return ctx.createPattern(patternCanvas, "repeat");
+}
+
+/**
+ * 创建自定义边框图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @param {number} rows - 总行数
+ * @param {number} cols - 总列数
+ * @param {number[]} firstLastRows - 首尾行范围
+ * @param {number[]} firstLastCols - 首尾列范围
+ * @param {string} firstLastColor - 首尾行颜色
+ * @param {number[]} secondRows - 第二行范围
+ * @param {number[]} secondCols - 第二列范围
+ * @param {string} secondColor - 第二行颜色
+ * @param {string} defaultColor - 默认颜色
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
+function createCustomBorderPattern(ctx, rows, cols, firstLastRows, firstLastCols, firstLastColor, secondRows, secondCols, secondColor, defaultColor) {
+  const patternCanvas = document.createElement("canvas");
+  patternCanvas.width = cellSize * cols;
+  patternCanvas.height = cellSize * rows;
+  const pCtx = patternCanvas.getContext("2d");
+
+  for (let i = 1; i <= rows; i++) {
+    for (let j = 1; j <= cols; j++) {
+      let fillColor = defaultColor;
+      
+      // 首尾行判断
+      if (i <= firstLastRows[0] || i >= firstLastRows[1]) {
+        fillColor = firstLastColor;
+      } 
+      // 第二行判断
+      else if (i <= secondRows[0] || i >= secondRows[1]) {
+        fillColor = (j <= secondCols[0] || j >= secondCols[1]) ? firstLastColor : secondColor;
+      } 
+      // 其他行判断
+      else {
+        fillColor = (j <= firstLastCols[0] || j >= firstLastCols[1]) ? firstLastColor : 
+                  ((j <= secondCols[0] || j >= secondCols[1]) ? secondColor : defaultColor);
+      }
+      
+      pCtx.fillStyle = fillColor;
+      pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
+    }
+  }
+  
+  return ctx.createPattern(patternCanvas, "repeat");
+}
+
+/*
+ * 加载图案图像
+ * @param {string} imageUrl - 图案图像的URL路径
+ * @return {Promise} - 返回一个Promise，在图像加载完成后解析为Image对象
+ */
 function loadPatternImage(imageUrl) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -125,198 +300,99 @@ function loadPatternImage(imageUrl) {
   });
 }
 
-// Patterns
-function createPattern1(ctx) {
-  const rows = 10;
-  const cols = 10;
+/*
+ * 创建图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @param {string} patternId - 图案ID
+ * @param {number} rows - 行数
+ * @param {number} cols - 列数
+ * @return {CanvasPattern} - 返回创建的图案对象
+ * 功能: 根据patternId创建指定行数和列数的图案
+ */
+function createPattern(ctx, patternId, rows, cols) {
   const patternCanvas = document.createElement("canvas");
   patternCanvas.width = cellSize * cols;
   patternCanvas.height = cellSize * rows;
   const pCtx = patternCanvas.getContext("2d");
 
-  // Fill every cell with the empty cell color "#CCCCCC"
+  // 根据patternId填充图案
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
-      pCtx.fillStyle = "#CCCCCC";
+      pCtx.fillStyle = getPatternColor(patternId, i, j);
       pCtx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
     }
   }
 
-  // Create and return the repeating pattern
   return ctx.createPattern(patternCanvas, "repeat");
 }
 
+/*
+ * 创建第二种图案(2x2棋盘格)
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ * 功能: 创建一个2x2的棋盘格图案
+ */
+/**
+ * 创建2x2棋盘格图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
 function createPattern2(ctx) {
-  const patternCanvas = document.createElement("canvas");
-  patternCanvas.width = cellSize * 2;
-  patternCanvas.height = cellSize * 2;
-  const patternCtx = patternCanvas.getContext("2d");
-
-  patternCtx.fillStyle = "#CCCCCC";
-  patternCtx.fillRect(0, 0, cellSize * 2, cellSize * 2);
-  patternCtx.fillStyle = "black";
-  patternCtx.fillRect(0, 0, cellSize, cellSize);
-  patternCtx.fillRect(cellSize, cellSize, cellSize, cellSize);
-
-  return ctx.createPattern(patternCanvas, "repeat");
+  return createCheckerboardPattern(ctx, 2, 2, "#CCCCCC", "black");
 }
 
+/*
+ * 创建第三种图案(边框图案)
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ * 功能: 创建一个12x16的边框图案，外圈为黑色，内圈为红色，中心为灰色
+ */
+/**
+ * 创建边框图案(外圈黑色，内圈红色，中心灰色)
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
 function createPattern3(ctx) {
-  // Example: 12 rows x 16 columns
-  const rows = 12;
-  const cols = 16;
-  const patternCanvas = document.createElement("canvas");
-  patternCanvas.width = cellSize * cols;
-  patternCanvas.height = cellSize * rows;
-  const patternCtx = patternCanvas.getContext("2d");
-
-  // Loop through each cell in the grid
-  for (let i = 1; i <= rows; i++) {
-    for (let j = 1; j <= cols; j++) {
-      let fillColor;
-
-      // Outer ring (top row, bottom row, left column, right column)
-      if (i === 1 || i === rows || j === 1 || j === cols) {
-        fillColor = "black";
-      }
-      // Inner ring (second row, second-last row, second column, second-last column)
-      else if (i === 2 || i === rows - 1 || j === 2 || j === cols - 1) {
-        fillColor = "red";
-      }
-      // Everything else in the center
-      else {
-        fillColor = "#CCCCCC";
-      }
-
-      patternCtx.fillStyle = fillColor;
-      patternCtx.fillRect(
-        (j - 1) * cellSize,
-        (i - 1) * cellSize,
-        cellSize,
-        cellSize
-      );
-    }
-  }
-
-  // Return a repeating pattern
-  return ctx.createPattern(patternCanvas, "repeat");
+  return createBorderPattern(ctx, 12, 16, 
+    [1, 12], [1, 16], "black", 
+    [2, 11], [2, 15], "red", 
+    "#CCCCCC");
 }
 
+/**
+ * 创建特定边框样式的图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
 function createPattern4(ctx) {
-  const rows = 12; // number of rows in our grid pattern
-  const cols = 16; // number of columns in our grid pattern
-  const patternCanvas = document.createElement("canvas");
-  patternCanvas.width = cellSize * cols;
-  patternCanvas.height = cellSize * rows;
-  const pCtx = patternCanvas.getContext("2d");
-
-  // Loop through each cell in the grid
-  for (let i = 1; i <= rows; i++) {
-    for (let j = 1; j <= cols; j++) {
-      let fillColor;
-      if (i === 1 || i === rows) {
-        // First and last row: empty cell color (#CCCCCC)
-        fillColor = "#CCCCCC";
-      } else if (i === 2 || i === rows - 1) {
-        // Second and second-to-last row:
-        // first and last columns remain empty, rest become hard cells (yellow)
-        fillColor = j === 1 || j === cols ? "#CCCCCC" : "black";
-      } else {
-        // Rows 3 to 8:
-        // first and last columns are empty,
-        // second and second-to-last are hard cells,
-        // the rest remain empty
-        if (j === 1 || j === cols) {
-          fillColor = "#CCCCCC";
-        } else if (j === 2 || j === cols - 1) {
-          fillColor = "black";
-        } else {
-          fillColor = "#CCCCCC";
-        }
-      }
-      pCtx.fillStyle = fillColor;
-      pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
-    }
-  }
-  return ctx.createPattern(patternCanvas, "repeat");
+  return createCustomBorderPattern(ctx, 12, 16, 
+    [1, 12], [1, 16], "#CCCCCC", 
+    [2, 11], [2, 15], "black", 
+    "#CCCCCC");
 }
 
+/**
+ * 创建红色边框样式的图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
 function createPattern5(ctx) {
-  const rows = 12; // number of rows in our grid pattern
-  const cols = 16; // number of columns in our grid pattern
-  const patternCanvas = document.createElement("canvas");
-  patternCanvas.width = cellSize * cols;
-  patternCanvas.height = cellSize * rows;
-  const pCtx = patternCanvas.getContext("2d");
-
-  // Loop through each cell in the grid
-  for (let i = 1; i <= rows; i++) {
-    for (let j = 1; j <= cols; j++) {
-      let fillColor;
-      if (i === 1 || i === rows) {
-        // First and last row: empty cell color (#CCCCCC)
-        fillColor = "red";
-      } else if (i === 2 || i === rows - 1) {
-        // Second and second-to-last row:
-        // first and last columns remain empty, rest become hard cells (yellow)
-        fillColor = j === 1 || j === cols ? "red" : "black";
-      } else {
-        // Rows 3 to 8:
-        // first and last columns are empty,
-        // second and second-to-last are hard cells,
-        // the rest remain empty
-        if (j === 1 || j === cols) {
-          fillColor = "red";
-        } else if (j === 2 || j === cols - 1) {
-          fillColor = "black";
-        } else {
-          fillColor = "black";
-        }
-      }
-      pCtx.fillStyle = fillColor;
-      pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
-    }
-  }
-  return ctx.createPattern(patternCanvas, "repeat");
+  return createCustomBorderPattern(ctx, 12, 16, 
+    [1, 12], [1, 16], "red", 
+    [2, 11], [2, 15], "black", 
+    "black");
 }
 
+/**
+ * 创建黑红相间的边框样式图案
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
 function createPattern6(ctx) {
-  const rows = 12; // number of rows in our grid pattern
-  const cols = 16; // number of columns in our grid pattern
-  const patternCanvas = document.createElement("canvas");
-  patternCanvas.width = cellSize * cols;
-  patternCanvas.height = cellSize * rows;
-  const pCtx = patternCanvas.getContext("2d");
-
-  // Loop through each cell in the grid
-  for (let i = 1; i <= rows; i++) {
-    for (let j = 1; j <= cols; j++) {
-      let fillColor;
-      if (i === 1 || i === rows) {
-        // First and last row: empty cell color (#CCCCCC)
-        fillColor = "black";
-      } else if (i === 2 || i === rows - 1) {
-        // Second and second-to-last row:
-        // first and last columns remain empty, rest become hard cells (yellow)
-        fillColor = j === 1 || j === cols ? "black" : "red";
-      } else {
-        // Rows 3 to 8:
-        // first and last columns are empty,
-        // second and second-to-last are hard cells,
-        // the rest remain empty
-        if (j === 1 || j === cols) {
-          fillColor = "black";
-        } else if (j === 2 || j === cols - 1) {
-          fillColor = "red";
-        } else {
-          fillColor = "#CCCCCC";
-        }
-      }
-      pCtx.fillStyle = fillColor;
-      pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
-    }
-  }
-  return ctx.createPattern(patternCanvas, "repeat");
+  return createCustomBorderPattern(ctx, 12, 16, 
+    [1, 12], [1, 16], "black", 
+    [2, 11], [2, 15], "red", 
+    "#CCCCCC");
 }
 
 // Define Initial Areas for Each Shape
@@ -586,41 +662,35 @@ function getInitialAreas(type) {
   }
 }
 
-function getPatternColor(patternName, i, j) {
-  switch (patternName) {
-    case "Pattern 1":
-      return "#CCCCCC";
-    case "Pattern 2":
-      return (i + j) % 2 === 0 ? "black" : "#CCCCCC";
-    case "Pattern 3":
-      const row = i % 12; // Pattern repeats every 12 rows
-      const col = j % 16; // Pattern repeats every 16 columns
+function getPatternColor(patternId, i, j) {
+  switch (patternId) {
+    case "1": return "#CCCCCC";
+    case "2": return (i + j) % 2 === 0 ? "black" : "#CCCCCC";
+    case "3":
+      const row = i % 12;
+      const col = j % 16;
       if (row === 0 || row === 11 || col === 0 || col === 15) return "black";
       if (row === 1 || row === 10 || col === 1 || col === 14) return "red";
       return "#CCCCCC";
-    case "Pattern 4":
+    case "4":
       const r4 = i % 12;
       const c4 = j % 16;
       if (r4 === 0 || r4 === 11) return "#CCCCCC";
-      if (r4 === 1 || r4 === 10)
-        return c4 === 0 || c4 === 15 ? "#CCCCCC" : "black";
-      return c4 === 0 || c4 === 15 || (c4 !== 1 && c4 !== 14)
-        ? "#CCCCCC"
-        : "black";
-    case "Pattern 5":
+      if (r4 === 1 || r4 === 10) return c4 === 0 || c4 === 15 ? "#CCCCCC" : "black";
+      return c4 === 0 || c4 === 15 || (c4 !== 1 && c4 !== 14) ? "#CCCCCC" : "black";
+    case "5":
       const r5 = i % 12;
       const c5 = j % 16;
       if (r5 === 0 || r5 === 11) return "red";
       if (r5 === 1 || r5 === 10) return c5 === 0 || c5 === 15 ? "red" : "black";
       return c5 === 0 || c5 === 15 ? "red" : "black";
-    case "Pattern 6":
+    case "6":
       const r6 = i % 12;
       const c6 = j % 16;
       if (r6 === 0 || r6 === 11) return "black";
       if (r6 === 1 || r6 === 10) return c6 === 0 || c6 === 15 ? "black" : "red";
       return c6 === 0 || c6 === 15 || (c6 !== 1 && c6 !== 14) ? "black" : "red";
-    default:
-      return "#CCCCCC";
+    default: return "#CCCCCC";
   }
 }
 
