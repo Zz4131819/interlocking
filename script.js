@@ -142,8 +142,8 @@ const tileTypes = [
 ];
 
 const edgeColors = [
-  // { id: "black", value: "#000000", name: "Black" },
-  // { id: "red", value: "#ff0000", name: "Red" },
+  { id: "black", value: "#000000", name: "Black" },
+  { id: "red", value: "#ff0000", name: "Red" },
   { id: "gray", value: "#CCCCCC", name: "Gray" },
 ];
 
@@ -152,8 +152,8 @@ const colors = [
   { id: "black", value: "#000000", name: "Black" },
   { id: "blue", value: "#0000ff", name: "Blue" },
   { id: "gray", value: "#808080", name: "Gray" },
-  // { id: "green", value: "#008000", name: "Green" },
-  // { id: "purple", value: "#800080", name: "Purple" },
+  { id: "green", value: "#008000", name: "Green" },
+  { id: "purple", value: "#800080", name: "Purple" },
 ];
 
 /*
@@ -188,7 +188,7 @@ function createCheckerboardPattern(ctx, rows, cols, color1, color2) {
   pCtx.fillStyle = color1;
   pCtx.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
   pCtx.fillStyle = color2;
-  
+
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
       if ((i + j) % 2 === 0) {
@@ -196,7 +196,7 @@ function createCheckerboardPattern(ctx, rows, cols, color1, color2) {
       }
     }
   }
-  
+
   return ctx.createPattern(patternCanvas, "repeat");
 }
 
@@ -214,7 +214,18 @@ function createCheckerboardPattern(ctx, rows, cols, color1, color2) {
  * @param {string} centerColor - 中心区域颜色
  * @return {CanvasPattern} - 返回创建的图案对象
  */
-function createBorderPattern(ctx, rows, cols, outerRows, outerCols, outerColor, innerRows, innerCols, innerColor, centerColor) {
+function createBorderPattern(
+  ctx,
+  rows,
+  cols,
+  outerRows,
+  outerCols,
+  outerColor,
+  innerRows,
+  innerCols,
+  innerColor,
+  centerColor
+) {
   const patternCanvas = document.createElement("canvas");
   patternCanvas.width = cellSize * cols;
   patternCanvas.height = cellSize * rows;
@@ -223,21 +234,31 @@ function createBorderPattern(ctx, rows, cols, outerRows, outerCols, outerColor, 
   for (let i = 1; i <= rows; i++) {
     for (let j = 1; j <= cols; j++) {
       let fillColor = centerColor;
-      
+
       // 外圈判断
-      if (i <= outerRows[0] || i >= outerRows[1] || j <= outerCols[0] || j >= outerCols[1]) {
+      if (
+        i <= outerRows[0] ||
+        i >= outerRows[1] ||
+        j <= outerCols[0] ||
+        j >= outerCols[1]
+      ) {
         fillColor = outerColor;
-      } 
+      }
       // 内圈判断
-      else if ((i <= innerRows[0] || i >= innerRows[1]) || (j <= innerCols[0] || j >= innerCols[1])) {
+      else if (
+        i <= innerRows[0] ||
+        i >= innerRows[1] ||
+        j <= innerCols[0] ||
+        j >= innerCols[1]
+      ) {
         fillColor = innerColor;
       }
-      
+
       pCtx.fillStyle = fillColor;
       pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
     }
   }
-  
+
   return ctx.createPattern(patternCanvas, "repeat");
 }
 
@@ -255,7 +276,18 @@ function createBorderPattern(ctx, rows, cols, outerRows, outerCols, outerColor, 
  * @param {string} defaultColor - 默认颜色
  * @return {CanvasPattern} - 返回创建的图案对象
  */
-function createCustomBorderPattern(ctx, rows, cols, firstLastRows, firstLastCols, firstLastColor, secondRows, secondCols, secondColor, defaultColor) {
+function createCustomBorderPattern(
+  ctx,
+  rows,
+  cols,
+  firstLastRows,
+  firstLastCols,
+  firstLastColor,
+  secondRows,
+  secondCols,
+  secondColor,
+  defaultColor
+) {
   const patternCanvas = document.createElement("canvas");
   patternCanvas.width = cellSize * cols;
   patternCanvas.height = cellSize * rows;
@@ -264,26 +296,33 @@ function createCustomBorderPattern(ctx, rows, cols, firstLastRows, firstLastCols
   for (let i = 1; i <= rows; i++) {
     for (let j = 1; j <= cols; j++) {
       let fillColor = defaultColor;
-      
+
       // 首尾行判断
       if (i <= firstLastRows[0] || i >= firstLastRows[1]) {
         fillColor = firstLastColor;
-      } 
+      }
       // 第二行判断
       else if (i <= secondRows[0] || i >= secondRows[1]) {
-        fillColor = (j <= secondCols[0] || j >= secondCols[1]) ? firstLastColor : secondColor;
-      } 
+        fillColor =
+          j <= secondCols[0] || j >= secondCols[1]
+            ? firstLastColor
+            : secondColor;
+      }
       // 其他行判断
       else {
-        fillColor = (j <= firstLastCols[0] || j >= firstLastCols[1]) ? firstLastColor : 
-                  ((j <= secondCols[0] || j >= secondCols[1]) ? secondColor : defaultColor);
+        fillColor =
+          j <= firstLastCols[0] || j >= firstLastCols[1]
+            ? firstLastColor
+            : j <= secondCols[0] || j >= secondCols[1]
+            ? secondColor
+            : defaultColor;
       }
-      
+
       pCtx.fillStyle = fillColor;
       pCtx.fillRect((j - 1) * cellSize, (i - 1) * cellSize, cellSize, cellSize);
     }
   }
-  
+
   return ctx.createPattern(patternCanvas, "repeat");
 }
 
@@ -353,10 +392,18 @@ function createPattern2(ctx) {
  * @return {CanvasPattern} - 返回创建的图案对象
  */
 function createPattern3(ctx) {
-  return createBorderPattern(ctx, 12, 16, 
-    [1, 12], [1, 16], "black", 
-    [2, 11], [2, 15], "red", 
-    "#CCCCCC");
+  return createBorderPattern(
+    ctx,
+    12,
+    16,
+    [1, 12],
+    [1, 16],
+    "black",
+    [2, 11],
+    [2, 15],
+    "red",
+    "#CCCCCC"
+  );
 }
 
 /**
@@ -365,10 +412,18 @@ function createPattern3(ctx) {
  * @return {CanvasPattern} - 返回创建的图案对象
  */
 function createPattern4(ctx) {
-  return createCustomBorderPattern(ctx, 12, 16, 
-    [1, 12], [1, 16], "#CCCCCC", 
-    [2, 11], [2, 15], "black", 
-    "#CCCCCC");
+  return createCustomBorderPattern(
+    ctx,
+    12,
+    16,
+    [1, 12],
+    [1, 16],
+    "#CCCCCC",
+    [2, 11],
+    [2, 15],
+    "black",
+    "#CCCCCC"
+  );
 }
 
 /**
@@ -377,10 +432,18 @@ function createPattern4(ctx) {
  * @return {CanvasPattern} - 返回创建的图案对象
  */
 function createPattern5(ctx) {
-  return createCustomBorderPattern(ctx, 12, 16, 
-    [1, 12], [1, 16], "red", 
-    [2, 11], [2, 15], "black", 
-    "black");
+  return createCustomBorderPattern(
+    ctx,
+    12,
+    16,
+    [1, 12],
+    [1, 16],
+    "red",
+    [2, 11],
+    [2, 15],
+    "black",
+    "black"
+  );
 }
 
 /**
@@ -389,10 +452,18 @@ function createPattern5(ctx) {
  * @return {CanvasPattern} - 返回创建的图案对象
  */
 function createPattern6(ctx) {
-  return createCustomBorderPattern(ctx, 12, 16, 
-    [1, 12], [1, 16], "black", 
-    [2, 11], [2, 15], "red", 
-    "#CCCCCC");
+  return createCustomBorderPattern(
+    ctx,
+    12,
+    16,
+    [1, 12],
+    [1, 16],
+    "black",
+    [2, 11],
+    [2, 15],
+    "red",
+    "#CCCCCC"
+  );
 }
 
 // Define Initial Areas for Each Shape
@@ -664,8 +735,10 @@ function getInitialAreas(type) {
 
 function getPatternColor(patternId, i, j) {
   switch (patternId) {
-    case "1": return "#CCCCCC";
-    case "2": return (i + j) % 2 === 0 ? "black" : "#CCCCCC";
+    case "1":
+      return "#CCCCCC";
+    case "2":
+      return (i + j) % 2 === 0 ? "black" : "#CCCCCC";
     case "3":
       const row = i % 12;
       const col = j % 16;
@@ -676,8 +749,11 @@ function getPatternColor(patternId, i, j) {
       const r4 = i % 12;
       const c4 = j % 16;
       if (r4 === 0 || r4 === 11) return "#CCCCCC";
-      if (r4 === 1 || r4 === 10) return c4 === 0 || c4 === 15 ? "#CCCCCC" : "black";
-      return c4 === 0 || c4 === 15 || (c4 !== 1 && c4 !== 14) ? "#CCCCCC" : "black";
+      if (r4 === 1 || r4 === 10)
+        return c4 === 0 || c4 === 15 ? "#CCCCCC" : "black";
+      return c4 === 0 || c4 === 15 || (c4 !== 1 && c4 !== 14)
+        ? "#CCCCCC"
+        : "black";
     case "5":
       const r5 = i % 12;
       const c5 = j % 16;
@@ -690,7 +766,8 @@ function getPatternColor(patternId, i, j) {
       if (r6 === 0 || r6 === 11) return "black";
       if (r6 === 1 || r6 === 10) return c6 === 0 || c6 === 15 ? "black" : "red";
       return c6 === 0 || c6 === 15 || (c6 !== 1 && c6 !== 14) ? "black" : "red";
-    default: return "#CCCCCC";
+    default:
+      return "#CCCCCC";
   }
 }
 
@@ -1492,52 +1569,68 @@ function updateActiveStep(step) {
 }
 
 // Cell Painting Functionality (Only for Colors)
+/**
+ * 处理画布点击事件
+ * 功能: 1) 将点击坐标转换为画布内部坐标 2) 计算点击所在的单元格 3) 应用颜色或创建新单元格
+ * @param {MouseEvent} e - 鼠标点击事件对象
+ */
 canvas.addEventListener("click", (e) => {
+  // 仅处理颜色选择模式下的点击
   if (activeSidebarSection !== "colors") return;
-
+  // 1. 坐标转换: 将浏览器坐标转换为画布内部坐标
   const rect = canvas.getBoundingClientRect();
-  // Calculate scaling factors
+  // 计算缩放比例(处理画布可能被CSS缩放的情况)
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-  // Convert to canvas internal coordinates
+  // 转换为画布内部坐标
   const clickX = (e.clientX - rect.left) * scaleX;
   const clickY = (e.clientY - rect.top) * scaleY;
 
+  // 2. 检查点击是否在设计形状内
   const path = getShapePath();
-
   if (!ctx.isPointInPath(path, clickX, clickY)) return;
 
-  // Calculate grid origin based on current shape vertices
+  // 3. 计算网格原点(基于设计形状的顶点)
   const xs = designShape.vertices.map((v) => v.x);
   const ys = designShape.vertices.map((v) => v.y);
-  const minX = Math.min(...xs);
-  const minY = Math.min(...ys);
+  const minX = Math.min(...xs); // 最左侧X坐标
+  const minY = Math.min(...ys); // 最上方Y坐标
 
-  // Adjust click coordinates to grid origin and calculate cell indices
+  // 4. 计算单元格索引和坐标
+  // 调整坐标到网格原点
   const gridX = clickX - minX;
   const gridY = clickY - minY;
+  // 计算单元格索引(行和列)
   const cellI = Math.floor(gridX / cellSize);
   const cellJ = Math.floor(gridY / cellSize);
-
-  // Compute cell coordinates relative to the grid's origin
+  // 计算单元格在画布上的绝对坐标
   const cellX = minX + cellI * cellSize;
   const cellY = minY + cellJ * cellSize;
 
+  // 5. 查找或创建单元格
   const existingCellIndex = paintedCells.findIndex(
     (cell) => cell.x === cellX && cell.y === cellY
   );
   let cell;
   if (existingCellIndex !== -1) {
+    // 单元格已存在: 获取现有单元格
     cell = paintedCells[existingCellIndex];
   } else {
-    cell = { x: cellX, y: cellY, tileId: designShape.currentTileId }; // Include tile by default
+    // 单元格不存在: 创建新单元格(包含默认瓷砖ID)
+    cell = {
+      x: cellX,
+      y: cellY,
+      tileId: designShape.currentTileId, // 使用当前选中的瓷砖ID
+    };
     paintedCells.push(cell);
   }
 
+  // 6. 应用颜色(仅在颜色选择模式下)
   if (activeSidebarSection === "colors") {
-    cell.color = paintColor; // Apply color, keep tile
+    cell.color = paintColor; // 应用当前选中的颜色
   }
 
+  // 7. 重绘画布以显示更改
   redrawCanvas();
 });
 
