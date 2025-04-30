@@ -227,8 +227,30 @@ function createPattern(ctx, patternId, rows, cols) {
  * @param {CanvasRenderingContext2D} ctx - 画布上下文
  * @return {CanvasPattern} - 返回创建的图案对象
  */
+/**
+ * 创建第一种图案(1x1纯色填充)
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
+function createPattern1(ctx) {
+  const patternCanvas = document.createElement("canvas");
+  patternCanvas.width = cellSize;
+  patternCanvas.height = cellSize;
+  const pCtx = patternCanvas.getContext("2d");
+  
+  pCtx.fillStyle = "#CCCCCC";
+  pCtx.fillRect(0, 0, cellSize, cellSize);
+  
+  return ctx.createPattern(patternCanvas, "repeat");
+}
+
+/**
+ * 创建第二种图案(2x2棋盘格)
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @return {CanvasPattern} - 返回创建的图案对象
+ */
 function createPattern2(ctx) {
-  return createCheckerboardPattern(ctx, 2, 2, "#CCCCCC", "black");
+  return createCheckerboardPattern(ctx, 2, 2, "#CCCCCC", "black", cellSize);
 }
 
 /*
@@ -253,7 +275,8 @@ function createPattern3(ctx) {
     [2, 11],
     [2, 15],
     "red",
-    "#CCCCCC"
+    "#CCCCCC",
+    cellSize
   );
 }
 
@@ -269,11 +292,12 @@ function createPattern4(ctx) {
     16,
     [1, 12],
     [1, 16],
-    "#CCCCCC",
+    "black",
     [2, 11],
     [2, 15],
-    "black",
-    "#CCCCCC"
+    "red",
+    "#CCCCCC",
+    cellSize
   );
 }
 

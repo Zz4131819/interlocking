@@ -11,7 +11,7 @@
  * @param {string} color2 - 第二种颜色
  * @return {CanvasPattern} - 返回创建的图案对象
  */
-function createCheckerboardPattern(ctx, rows, cols, color1, color2) {
+function createCheckerboardPattern(ctx, rows, cols, color1, color2, cellSize) {
   const patternCanvas = document.createElement("canvas");
   // Ensure minimum dimensions of 1 pixel if cellSize is 0
   const width = Math.max(1, cellSize * cols);
@@ -59,7 +59,8 @@ function createBorderPattern(
   innerRows,
   innerCols,
   innerColor,
-  centerColor
+  centerColor,
+  cellSize
 ) {
   const patternCanvas = document.createElement("canvas");
   // Ensure minimum dimensions of 1 pixel if cellSize is 0
@@ -124,12 +125,19 @@ function createCustomBorderPattern(
   secondRows,
   secondCols,
   secondColor,
-  defaultColor
+  defaultColor,
+  cellSize = 32.8125 // Default cellSize from script.js
 ) {
   const patternCanvas = document.createElement("canvas");
-  // Ensure minimum dimensions of 1 pixel if cellSize is 0
-  const width = Math.max(1, cellSize * cols);
-  const height = Math.max(1, cellSize * rows);
+  // Ensure valid dimensions
+  if (rows <= 0 || cols <= 0) {
+    throw new Error("Rows and cols must be positive numbers");
+  }
+  
+  // Calculate dimensions with fallback to default cellSize if 0
+  const effectiveCellSize = cellSize > 0 ? cellSize : 32.8125;
+  const width = Math.max(1, effectiveCellSize * cols);
+  const height = Math.max(1, effectiveCellSize * rows);
   patternCanvas.width = width;
   patternCanvas.height = height;
   const pCtx = patternCanvas.getContext("2d");
